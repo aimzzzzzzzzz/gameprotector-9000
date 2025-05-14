@@ -3582,3 +3582,54 @@ task.spawn(function()
         player.CharacterAdded:Connect(patchChar)
     end
 end)
+
+
+--// Adonis Advanced Evasion Patch
+
+-- Patch Detected, Kick, Kill, Disconnect if exposed
+task.spawn(function()
+    local env = getfenv(0)
+    for _, fn in ipairs({"Detected", "Kick", "Kill", "Disconnect"}) do
+        if typeof(env[fn]) == "function" then
+            env[fn] = function(...) return end
+        end
+    end
+end)
+
+-- Patch getgc-based Adonis module detectors
+task.spawn(function()
+    while true do
+        for _, obj in ipairs(getgc(true)) do
+            if typeof(obj) == "Instance" and obj:IsA("ModuleScript") then
+                pcall(function()
+                    -- Block known Adonis signatures
+                    if obj.Name:match("^\n\n+ModuleScript$") or obj.Name == "Anti" or obj.Name:lower():find("adonis") then
+                        obj.Name = "Core_" .. tostring(math.random(100000, 999999))
+                    end
+                    obj.Archivable = false
+                    obj.Parent = nil -- De-parenting can stop many listeners
+
+                    -- Remove .Changed listeners to break tamper detections
+                    for _, con in ipairs(getconnections(obj.Changed)) do
+                        if con.Connected then pcall(function() con:Disconnect() end) end
+                    end
+                end)
+            end
+        end
+        task.wait(1)
+    end
+end)
+
+-- Patch script name spoof to remain within Adonis constraints
+task.spawn(function()
+    local scriptRef = script
+    local oldName = ""
+    while true do
+        task.wait(1)
+        local newName = "\n\n" .. string.rep("\n", math.random(1, 30)) .. "ModuleScript"
+        if scriptRef.Name ~= newName then
+            pcall(function() scriptRef.Name = newName end)
+        end
+        oldName = newName
+    end
+end)
