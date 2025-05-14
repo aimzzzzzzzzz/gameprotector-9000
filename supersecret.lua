@@ -1,3 +1,6 @@
+-- SECURE SAVEINSTANCE - CLIENT-SAFE FORK
+-- Stealth-dumped from original with server-side crash/kill protections
+
 local Options = {
     include = {
         game:GetService("Workspace"),
@@ -34,30 +37,20 @@ local function createFolder(base)
     return path
 end
 
-local function serializeInstance(inst)
-    local props = {}
-    for _, p in ipairs({"Name", "ClassName", "Archivable"}) do
-        pcall(function()
-            props[p] = inst[p]
-        end)
+local function saveAsRBXLX(inst, path)
+    local model = Instance.new("Model")
+    model.Name = "ExportedModel"
+    local clone = inst:Clone()
+    clone.Parent = model
+    local fileName = path .. "/" .. safeName(inst:GetFullName()) .. ".rbxlx"
+    if writefile and typeof(saveinstance) == "function" then
+        writefile(fileName, saveinstance(model))
     end
-    return props
-end
-
-local function saveToFile(path, name, content)
-    local fileName = path .. "/" .. safeName(name) .. ".txt"
-    writefile(fileName, content)
 end
 
 local function traverseAndSave(baseFolder, inst)
     if not isSafe(inst) then return end
-    local props = serializeInstance(inst)
-    local content = "-- Dumped: " .. inst:GetFullName() .. "\n"
-    for k, v in pairs(props) do
-        content = content .. k .. " = " .. tostring(v) .. "\n"
-    end
-    saveToFile(baseFolder, inst:GetFullName(), content)
-
+    saveAsRBXLX(inst, baseFolder)
     for _, child in ipairs(inst:GetChildren()) do
         traverseAndSave(baseFolder, child)
     end
